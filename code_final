@@ -1,0 +1,55 @@
+#include <DFRobot_LCD.h> // Librairie pour l'écran DFRobot LCD
+
+// Initialisation de l'écran (adresse I2C : 0x3E)
+DFRobot_LCD lcd_1(16, 2, 0x3E);
+
+// Constantes pour le calcul de la température
+const int analogPin = A0;       // Entrée analogique pour le capteur
+const float Rref = 10000.0;     // Résistance de référence (10 kΩ)
+const float A = 1.129148e-3;    // Coefficient A de Steinhart-Hart
+const float B = 2.34125e-4;     // Coefficient B de Steinhart-Hart
+const float C = 8.76741e-8;     // Coefficient C de Steinhart-Hart
+
+// Offset pour corriger les éventuelles imprécisions
+const float offset = -2.0; // Ajustez si nécessaire
+
+void setup() {
+  // Initialisation de l'écran LCD
+  lcd_1.init();
+  lcd_1.setRGB(0, 255, 0); // Couleur de rétroéclairage : vert
+  pinMode(analogPin, INPUT); // Configuration du pin A0 en entrée
+  delay(500);
+}
+
+void loop() {
+  // Lecture analogique
+  int rawValue = analogRead(analogPin);
+
+  // Calcul de la résistance de la thermistance
+  if (rawValue == 0) {
+    // Évite une division par zéro si aucune valeur n'est lue
+    lcd_1.setCursor(0, 0);
+    lcd_1.print("Erreur capteur");
+    delay(1500);
+    return;
+  }
+  float Rtherm = Rref * (1023.0 / rawValue - 1.0);
+
+  // Calcul de la température en Kelvin
+  float tempK = 1.0 / (A + B * log(Rtherm) + C * pow(log(Rtherm), 3));
+
+  // Conversion en Celsius
+  float tempC = tempK - 273.15;
+
+  // Application de l'offset
+  tempC += offset;
+
+  // Affichage sur l'écran LCD
+  lcd_1.setCursor(0, 0);
+  lcd_1.print("Temperature :");
+  lcd_1.setCursor(0, 1);
+  lcd_1.print(tempC, 2); // Affiche avec 2 décimales
+  lcd_1.print(" C    ");
+
+  delay(1500);
+}
